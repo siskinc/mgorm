@@ -106,7 +106,9 @@ func DefaultMongoDBClient(collection string) *MongoDBClient {
 	}
 }
 
-// Connect func 连接MongoDB
+// Connect return an error if connect mongodb is exception
+// If the MongoDBClient Object Session's S is not nil point,
+// this function will stop run and return an error of nil.
 func (m *MongoDBClient) Connect() error {
 	if m.S != nil {
 		return nil
@@ -128,7 +130,7 @@ func (m *MongoDBClient) Connect() error {
 	return nil
 }
 
-// DB func 设置MongoDBClient的DB
+// DB will set the MongoDBClient Object Session's DB filed
 func (m *MongoDBClient) DB() {
 	if m.Session.Db != nil {
 		return
@@ -137,7 +139,7 @@ func (m *MongoDBClient) DB() {
 	m.Session.Db = db
 }
 
-// C func 设置MongoDBClient的Collection
+// C will set the MongoDBClient Object Session's C filed
 func (m *MongoDBClient) C() {
 	if m.Session.Db == nil {
 		m.DB()
@@ -149,7 +151,7 @@ func (m *MongoDBClient) C() {
 	m.Session.C = c
 }
 
-// Close func
+// Close
 func (m *MongoDBClient) Close() {
 	if m.S != nil {
 		m.S.LogoutAll()
