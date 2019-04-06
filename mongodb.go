@@ -25,6 +25,87 @@ type MongoDBClient struct {
 	Session
 }
 
+type collections map[string]map[string]*mgo.Collection
+type dbs map[string]*mgo.Database
+
+var (
+	defaultHosts                   string
+	defaultDatabase                string
+	defaultUsername                string
+	defaultPassword                string
+	defaultCollectionTimeoutSecond int
+	defaultMgoSession              *mgo.Session
+	defaultMgoDatabase             *mgo.Database
+	allColletions                  collections
+	allDbs                         dbs
+)
+
+func init() {
+	allColletions = make(map[string]map[string]*mgo.Collection, 0)
+	allDbs = make(map[string]*mgo.Database, 0)
+}
+
+func Colletion(database, collection string) *mgo.Collection {
+	databaseMap, ok := allColletions[database]
+	if !ok {
+		databaseMap = make(map[string]*mgo.Collection, 0)
+		allColletions[database] = databaseMap
+		db := allDbs[database]
+		if db == nil {
+			db = DefaultDatabase(database)
+		}
+		allColletions[database][collection] = db.C(collection)
+	}
+	return databaseMap[collection]
+}
+
+func DefaultDatabase(database string) *mgo.Database {
+	db := allDbs[database]
+	if db == nil {
+		db = defaultMgoSession.DB(database)
+	}
+	return db
+}
+
+func DefaultMgoInfo(hosts, database, username, password string, collectionTimeoutSecond int) error {
+	defaultHosts = hosts
+	defaultDatabase = database
+	defaultUsername = username
+	defaultPassword = password
+	defaultCollectionTimeoutSecond = collectionTimeoutSecond
+	dialInfo := &mgo.DialInfo{
+		Addrs:    strings.Split(defaultHosts, ","),
+		Timeout:  time.Duration(defaultCollectionTimeoutSecond) * time.Second,
+		Database: defaultDatabase,
+		Username: defaultUsername,
+		Password: defaultPassword,
+	}
+	session, err := mgo.DialWithInfo(dialInfo)
+	if err != nil {
+		return err
+	}
+	defaultMgoSession = session
+	defaultMgoSession.SetMode(mgo.Monotonic, true)
+	defaultMgoDatabase = session.DB(defaultDatabase)
+	return nil
+}
+
+func DefaultMongoDBClient(collection string) *MongoDBClient {
+	return &MongoDBClient{
+		Hosts:                   defaultHosts,
+		Database:                defaultDatabase,
+		Collection:              collection,
+		Username:                defaultUsername,
+		Password:                defaultPassword,
+		CollectionTimeoutSecond: defaultCollectionTimeoutSecond,
+		Session: Session{
+			S:  defaultMgoSession,
+			Db: defaultMgoDatabase,
+			C:  defaultMgoDatabase.C(collection),
+		},
+	}
+}
+
 // Connect func 连接MongoDB
 func (m *MongoDBClient) Connect() error {
 	if m.S != nil {
@@ -49,6 +130,9 @@ func (m *MongoDBClient) Connect() error {
 
 // DB func 设置MongoDBClient的DB
 func (m *MongoDBClient) DB() {
+	if m.Session.Db != nil {
+		return
+	}
 	db := m.Session.S.DB(m.Database)
 	m.Session.Db = db
 }
@@ -57,6 +141,9 @@ func (m *MongoDBClient) DB() {
 func (m *MongoDBClient) C() {
 	if m.Session.Db == nil {
 		m.DB()
+	}
+	if m.Session.C != nil {
+		return
 	}
 	c := m.Session.Db.C(m.Collection)
 	m.Session.C = c
@@ -84,7 +171,6 @@ func (m *MongoDBClient) Save(model interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	err = collection.Insert(model)
 	return
@@ -96,7 +182,6 @@ func (m *MongoDBClient) Find(result interface{}, query interface{}, isOne bool) 
 	if err != nil {
 		return
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	if isOne {
 		err = collection.Find(query).One(result)
@@ -122,7 +207,6 @@ func (m *MongoDBClient) FindAll4Iter(query interface{}) (iter *mgo.Iter, err err
 	if err != nil {
 		return
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	iter = collection.Find(query).Iter()
 	err = iter.Err()
@@ -137,7 +221,6 @@ func (m *MongoDBClient) FindPage(result interface{}, query interface{}, iPageSiz
 	if err != nil {
 		return err
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	skip := iPageSize * (iPageIndex - 1)
 	if len(SortedStrs) == 0 {
@@ -154,7 +237,6 @@ func (m *MongoDBClient) Count(query interface{}) (count int, err error) {
 	if err != nil {
 		return
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	count, err = collection.Find(query).Count()
 	return
@@ -180,7 +262,6 @@ func (m *MongoDBClient) Update(query, updater interface{}, isOne bool) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	if isOne {
 		err = collection.Update(query, updater)
@@ -196,7 +277,6 @@ func (m *MongoDBClient) Delete(query interface{}, isOne bool) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	if isOne {
 		err = collection.Remove(query)
@@ -212,7 +292,6 @@ func (m *MongoDBClient) DeleteById(query interface{}, id string) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
 	collection := m.GetColletion()
 	err = collection.RemoveId(id)
 	return err
