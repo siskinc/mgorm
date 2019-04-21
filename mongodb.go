@@ -1,8 +1,12 @@
 package mgorm
 
 import (
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/globalsign/mgo/bson"
+	autorestapi "github.com/siskinc/auto-rest-api"
 
 	"github.com/globalsign/mgo"
 )
@@ -317,4 +321,80 @@ func (m *MongoDBClient) UpdateOne(query, updater interface{}) error {
 // UpdateAll func
 func (m *MongoDBClient) UpdateAll(query, updater interface{}) error {
 	return m.Update(query, updater, false)
+}
+
+func Save(collection *mgo.Collection, model interface{}, ID bson.ObjectId) (err error) {
+	if collection == nil {
+		return fmt.Errorf("collection is nil!")
+	}
+	if ID == "" {
+		err = collection.Insert(model)
+	} else {
+		query := bson.M{"_id": ID}
+		_, err = collection.UpdateAll(query, model)
+	}
+	return
+}
+
+func Find(collection *mgo.Collection, result interface{}, query interface{}, pageSize int, pageIndex int, sorted string) (err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	err = collection.Find(query).Skip((pageIndex - 1) * pageSize).Limit(pageSize).Sort(sorted).All(&result)
+	return
+}
+
+func FindOne(collection *mgo.Collection, query interface{}) (result autorestapi.Model, err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	err = collection.Find(query).One(&result)
+	return
+}
+
+func Count(collection *mgo.Collection, query interface{}) (count int, err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	count, err = collection.Find(query).Count()
+	return
+}
+
+func Delete(collection *mgo.Collection, query interface{}) (err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	err = collection.Remove(query)
+	return
+}
+
+func DeleteAll(collection *mgo.Collection, query interface{}) (err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	_, err = collection.RemoveAll(query)
+	return
+}
+
+func UpdateOne(collection *mgo.Collection, query interface{}, update interface{}) (err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	err = collection.Update(query, update)
+	return
+}
+
+func UpdateAll(collection *mgo.Collection, query interface{}, update interface{}) (err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	_, err = collection.UpdateAll(query, update)
+	return
 }
