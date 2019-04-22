@@ -345,7 +345,7 @@ func Find(collection *mgo.Collection, result interface{}, query interface{}, pag
 	return
 }
 
-func FindOne(collection *mgo.Collection, query interface{}) (result autorestapi.Model, err error) {
+func FindOne(collection *mgo.Collection, query interface{}, result autorestapi.Model) (err error) {
 	if collection == nil {
 		err = fmt.Errorf("collection is nil!")
 		return
