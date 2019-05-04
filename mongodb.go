@@ -56,6 +56,7 @@ func Colletion(database, collection string) *mgo.Collection {
 		db := allDbs[database]
 		if db == nil {
 			db = DefaultDatabase(database)
+			allDbs[database] = db
 		}
 		allColletions[database][collection] = db.C(collection)
 	}
