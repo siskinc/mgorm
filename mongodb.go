@@ -340,7 +340,8 @@ func Save(collection *mgo.Collection, model interface{}, ID bson.ObjectId) (err 
 		return
 	}
 	if count > 0 {
-		_, err = collection.UpdateAll(query, model)
+		updater := bson.M{"$set": model}
+		_, err = collection.UpdateAll(query, updater)
 	} else {
 		collection.Insert(model)
 	}
