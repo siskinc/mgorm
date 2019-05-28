@@ -53,14 +53,20 @@ func Colletion(database, collection string) *mgo.Collection {
 	if !ok {
 		databaseMap = make(map[string]*mgo.Collection, 0)
 		allColletions[database] = databaseMap
-		db := allDbs[database]
-		if db == nil {
+		db, ok := allDbs[database]
+		if !ok {
 			db = DefaultDatabase(database)
 			allDbs[database] = db
 		}
 		allColletions[database][collection] = db.C(collection)
 	}
-	return databaseMap[collection]
+	c, ok := databaseMap[collection]
+	if !ok {
+		db := allDbs[database]
+		c = db.C(collection)
+		allColletions[database][collection] = c
+	}
+	return c
 }
 
 func DefaultDatabase(database string) *mgo.Database {
@@ -327,11 +333,16 @@ func Save(collection *mgo.Collection, model interface{}, ID bson.ObjectId) (err 
 	if collection == nil {
 		return fmt.Errorf("collection is nil!")
 	}
-	if ID == "" {
-		err = collection.Insert(model)
-	} else {
-		query := bson.M{"_id": ID}
+	var count int
+	query := bson.M{"_id": ID}
+	count, err = collection.FindId(ID).Count()
+	if err != nil {
+		return
+	}
+	if count > 0 {
 		_, err = collection.UpdateAll(query, model)
+	} else {
+		collection.Insert(model)
 	}
 	return
 }
@@ -350,7 +361,7 @@ func FindOne(collection *mgo.Collection, query interface{}, result interface{}) 
 		err = fmt.Errorf("collection is nil!")
 		return
 	}
-	err = collection.Find(query).One(&result)
+	err = collection.Find(query).One(result)
 	return
 }
 
