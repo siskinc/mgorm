@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/globalsign/mgo/bson"
 	"github.com/siskinc/mgorm"
 )
@@ -14,7 +15,7 @@ type User struct {
 func main() {
 	// set the default mongodb infomation
 	err := mgorm.DefaultMgoInfo(
-		"127.0.0.1:27017",
+		"193.112.25.176:27017",
 		"testdb",
 		"",
 		"",
@@ -27,14 +28,14 @@ func main() {
 	user.Username = "123"
 	user.Password = "123"
 	col := mgorm.Colletion("testdb", "user")
-	user.ID = bson.NewObjectId()
-	err = mgorm.Save(col, user, user.ID)
+	err = mgorm.Save(col, user)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(user)
 
 	user.Password = "1234"
-	err = mgorm.Save(col, user, user.ID)
+	err = mgorm.Save(col, user)
 	if err != nil {
 		panic(err)
 	}

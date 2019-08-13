@@ -353,28 +353,35 @@ func (m *MongoDBClient) UpdateAll(query, updater interface{}) error {
 	return m.Update(query, updater, false)
 }
 
-func Save(collection *mgo.Collection, model interface{}, ID bson.ObjectId) (err error) {
+func Save(collection *mgo.Collection, model interface{}) (err error) {
 	if collection == nil {
 		return fmt.Errorf("collection is nil!")
 	}
 	var count int
-	query := bson.M{"_id": ID}
-	count, err = collection.FindId(ID).Count()
-	if err != nil {
-		return
-	}
-	if count > 0 {
-		updater := bson.M{"$set": model}
-		_, err = collection.UpdateAll(query, updater)
-		if err != nil {
-			return fmt.Errorf("update is err")
-		}
+
+	ID := getObjectID(model)
+
+	if ID == "" {
+		ID = bson.NewObjectId()
+		setObjectID(model, ID)
 	} else {
-		err = collection.Insert(model)
+		query := bson.M{"_id": ID}
+		count, err = collection.FindId(ID).Count()
 		if err != nil {
-			return fmt.Errorf("save is err")
+			return
+		}
+		if count > 0 {
+			updater := bson.M{"$set": model}
+			_, err = collection.UpdateAll(query, updater)
+			return err
 		}
 	}
+
+	err = collection.Insert(model)
+	if err != nil {
+		return fmt.Errorf("save is err")
+	}
+
 	return
 }
 
