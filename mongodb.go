@@ -307,8 +307,8 @@ func (m *MongoDBClient) Update(query, updater interface{}, isOne bool) error {
 	return err
 }
 
-// Delete func
-func (m *MongoDBClient) Delete(query interface{}, isOne bool) error {
+// DeleteModel func
+func (m *MongoDBClient) DeleteModel(query interface{}, isOne bool) error {
 	err := m.Connect()
 	if err != nil {
 		return err
@@ -333,14 +333,24 @@ func (m *MongoDBClient) DeleteById(query interface{}, id string) error {
 	return err
 }
 
+func (m *MongoDBClient) Delete(model interface{}) error {
+	id := getObjectID(model)
+	if id == "" {
+		return fmt.Errorf("id is empty")
+	}
+	query := bson.M{"_id": id}
+	err := m.DeleteModel(query, true)
+	return err
+}
+
 //DeleteOne func
 func (m *MongoDBClient) DeleteOne(query interface{}) error {
-	return m.Delete(query, false)
+	return m.DeleteModel(query, false)
 }
 
 //DeleteAll func
 func (m *MongoDBClient) DeleteAll(query interface{}) error {
-	return m.Delete(query, true)
+	return m.DeleteModel(query, true)
 }
 
 // UpdateOne func
@@ -412,12 +422,26 @@ func Count(collection *mgo.Collection, query interface{}) (count int, err error)
 	return
 }
 
-func Delete(collection *mgo.Collection, query interface{}) (err error) {
+func DeleteByQuery(collection *mgo.Collection, query interface{}) (err error) {
 	if collection == nil {
 		err = fmt.Errorf("collection is nil!")
 		return
 	}
 	err = collection.Remove(query)
+	return
+}
+
+func Delete(collection *mgo.Collection, model interface{}) (err error) {
+	if collection == nil {
+		err = fmt.Errorf("collection is nil!")
+		return
+	}
+	id := getObjectID(model)
+	if id == "" {
+		err = fmt.Errorf("id is empty")
+		return
+	}
+	err = collection.Remove(bson.M{"_id": id})
 	return
 }
 

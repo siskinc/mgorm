@@ -40,4 +40,6 @@ func main() {
 		panic(err)
 	}
 
+	err = mgorm.Delete(col, user)
+
 }
