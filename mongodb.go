@@ -29,6 +29,7 @@ type MongoDBClient struct {
 }
 
 type collections map[string]map[string]*mgo.Collection
+type gridFSList map[string]map[string]*mgo.GridFS
 type dbs map[string]*mgo.Database
 
 var (
@@ -40,12 +41,14 @@ var (
 	defaultMgoSession              *mgo.Session
 	defaultMgoDatabase             *mgo.Database
 	allColletions                  collections
+	allGridFS                      gridFSList
 	allDbs                         dbs
 )
 
 func init() {
-	allColletions = make(map[string]map[string]*mgo.Collection, 0)
-	allDbs = make(map[string]*mgo.Database, 0)
+	allColletions = make(collections, 0)
+	allGridFS = make(gridFSList, 0)
+	allDbs = make(dbs, 0)
 }
 
 func Colletion(database, collection string) *mgo.Collection {
@@ -67,6 +70,27 @@ func Colletion(database, collection string) *mgo.Collection {
 		allColletions[database][collection] = c
 	}
 	return c
+}
+
+func GridFS(database, gridFSName string) *mgo.GridFS {
+	databaseMap, ok := allGridFS[database]
+	if !ok {
+		databaseMap = make(map[string]*mgo.GridFS, 0)
+		allGridFS[database] = databaseMap
+		db, ok := allDbs[database]
+		if !ok {
+			db = DefaultDatabase(database)
+			allDbs[database] = db
+		}
+		allGridFS[database][gridFSName] = db.GridFS(gridFSName)
+	}
+	g, ok := databaseMap[gridFSName]
+	if !ok {
+		db := allDbs[database]
+		g = db.GridFS(gridFSName)
+		allGridFS[database][gridFSName] = g
+	}
+	return g
 }
 
 func DefaultDatabase(database string) *mgo.Database {
@@ -342,8 +366,14 @@ func Save(collection *mgo.Collection, model interface{}, ID bson.ObjectId) (err 
 	if count > 0 {
 		updater := bson.M{"$set": model}
 		_, err = collection.UpdateAll(query, updater)
+		if err != nil {
+			return fmt.Errorf("update is err")
+		}
 	} else {
-		collection.Insert(model)
+		err = collection.Insert(model)
+		if err != nil {
+			return fmt.Errorf("save is err")
+		}
 	}
 	return
 }
