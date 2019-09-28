@@ -40,34 +40,34 @@ var (
 	defaultCollectionTimeoutSecond int
 	defaultMgoSession              *mgo.Session
 	defaultMgoDatabase             *mgo.Database
-	allColletions                  collections
+	allCollections                 collections
 	allGridFS                      gridFSList
 	allDbs                         dbs
 )
 
 func init() {
-	allColletions = make(collections, 0)
+	allCollections = make(collections, 0)
 	allGridFS = make(gridFSList, 0)
 	allDbs = make(dbs, 0)
 }
 
 func Colletion(database, collection string) *mgo.Collection {
-	databaseMap, ok := allColletions[database]
+	databaseMap, ok := allCollections[database]
 	if !ok {
 		databaseMap = make(map[string]*mgo.Collection, 0)
-		allColletions[database] = databaseMap
+		allCollections[database] = databaseMap
 		db, ok := allDbs[database]
 		if !ok {
 			db = DefaultDatabase(database)
 			allDbs[database] = db
 		}
-		allColletions[database][collection] = db.C(collection)
+		allCollections[database][collection] = db.C(collection)
 	}
 	c, ok := databaseMap[collection]
 	if !ok {
 		db := allDbs[database]
 		c = db.C(collection)
-		allColletions[database][collection] = c
+		allCollections[database][collection] = c
 	}
 	return c
 }
@@ -193,8 +193,8 @@ func (m *MongoDBClient) Close() {
 	}
 }
 
-// GetColletion func
-func (m *MongoDBClient) GetColletion() *mgo.Collection {
+// GetCollection func
+func (m *MongoDBClient) GetCollection() *mgo.Collection {
 	if m.Session.C == nil {
 		m.C()
 	}
@@ -207,7 +207,7 @@ func (m *MongoDBClient) Save(model interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	err = collection.Insert(model)
 	return
 }
@@ -218,7 +218,7 @@ func (m *MongoDBClient) Find(result interface{}, query interface{}, isOne bool) 
 	if err != nil {
 		return
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	if isOne {
 		err = collection.Find(query).One(result)
 	} else {
@@ -243,7 +243,7 @@ func (m *MongoDBClient) FindAll4Iter(query interface{}) (iter *mgo.Iter, err err
 	if err != nil {
 		return
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	iter = collection.Find(query).Iter()
 	err = iter.Err()
 	if err != nil {
@@ -257,7 +257,7 @@ func (m *MongoDBClient) FindPage(result interface{}, query interface{}, iPageSiz
 	if err != nil {
 		return err
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	skip := iPageSize * (iPageIndex - 1)
 	if len(SortedStrs) == 0 {
 		return collection.Find(query).Skip(skip).Limit(iPageSize).All(result)
@@ -273,7 +273,7 @@ func (m *MongoDBClient) Count(query interface{}) (count int, err error) {
 	if err != nil {
 		return
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	count, err = collection.Find(query).Count()
 	return
 }
@@ -298,7 +298,7 @@ func (m *MongoDBClient) Update(query, updater interface{}, isOne bool) error {
 	if err != nil {
 		return err
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	if isOne {
 		err = collection.Update(query, updater)
 	} else {
@@ -313,7 +313,7 @@ func (m *MongoDBClient) DeleteModel(query interface{}, isOne bool) error {
 	if err != nil {
 		return err
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	if isOne {
 		err = collection.Remove(query)
 	} else {
@@ -328,7 +328,7 @@ func (m *MongoDBClient) DeleteById(query interface{}, id string) error {
 	if err != nil {
 		return err
 	}
-	collection := m.GetColletion()
+	collection := m.GetCollection()
 	err = collection.RemoveId(id)
 	return err
 }
@@ -365,7 +365,7 @@ func (m *MongoDBClient) UpdateAll(query, updater interface{}) error {
 
 func Save(collection *mgo.Collection, model interface{}) (err error) {
 	if collection == nil {
-		return fmt.Errorf("collection is nil!")
+		return fmt.Errorf("collection is nil")
 	}
 	var count int
 
@@ -397,7 +397,7 @@ func Save(collection *mgo.Collection, model interface{}) (err error) {
 
 func Find(collection *mgo.Collection, result interface{}, query interface{}, pageSize int, pageIndex int, sorted string) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	err = collection.Find(query).Skip((pageIndex - 1) * pageSize).Limit(pageSize).Sort(sorted).All(&result)
@@ -406,7 +406,7 @@ func Find(collection *mgo.Collection, result interface{}, query interface{}, pag
 
 func FindOne(collection *mgo.Collection, query interface{}, result interface{}) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	err = collection.Find(query).One(result)
@@ -415,7 +415,7 @@ func FindOne(collection *mgo.Collection, query interface{}, result interface{}) 
 
 func Count(collection *mgo.Collection, query interface{}) (count int, err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	count, err = collection.Find(query).Count()
@@ -424,7 +424,7 @@ func Count(collection *mgo.Collection, query interface{}) (count int, err error)
 
 func DeleteByQuery(collection *mgo.Collection, query interface{}) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	err = collection.Remove(query)
@@ -433,7 +433,7 @@ func DeleteByQuery(collection *mgo.Collection, query interface{}) (err error) {
 
 func Delete(collection *mgo.Collection, model interface{}) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	id := getObjectID(model)
@@ -447,7 +447,7 @@ func Delete(collection *mgo.Collection, model interface{}) (err error) {
 
 func DeleteAll(collection *mgo.Collection, query interface{}) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	_, err = collection.RemoveAll(query)
@@ -456,7 +456,7 @@ func DeleteAll(collection *mgo.Collection, query interface{}) (err error) {
 
 func UpdateOne(collection *mgo.Collection, query interface{}, update interface{}) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	err = collection.Update(query, update)
@@ -465,7 +465,7 @@ func UpdateOne(collection *mgo.Collection, query interface{}, update interface{}
 
 func UpdateAll(collection *mgo.Collection, query interface{}, update interface{}) (err error) {
 	if collection == nil {
-		err = fmt.Errorf("collection is nil!")
+		err = fmt.Errorf("collection is nil")
 		return
 	}
 	_, err = collection.UpdateAll(query, update)
