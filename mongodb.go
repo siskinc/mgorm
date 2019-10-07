@@ -323,7 +323,7 @@ func (m *MongoDBClient) DeleteModel(query interface{}, isOne bool) error {
 }
 
 // DeleteById func
-func (m *MongoDBClient) DeleteById(query interface{}, id string) error {
+func (m *MongoDBClient) DeleteByID(id string) error {
 	err := m.Connect()
 	if err != nil {
 		return err
