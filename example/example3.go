@@ -15,7 +15,7 @@ type User struct {
 func main() {
 	// set the default mongodb infomation
 	err := mgorm.DefaultMgoInfo(
-		"193.112.25.176:27017",
+		"127.0.0.1:27017",
 		"testdb",
 		"",
 		"",

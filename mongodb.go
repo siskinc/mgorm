@@ -363,6 +363,24 @@ func (m *MongoDBClient) UpdateAll(query, updater interface{}) error {
 	return m.Update(query, updater, false)
 }
 
+func (m *MongoDBClient) EnsureIndex(index mgo.Index) error {
+	err := m.Connect()
+	if err != nil {
+		return err
+	}
+	collection := m.GetCollection()
+	return collection.EnsureIndex(index)
+}
+
+func (m *MongoDBClient) DropIndex(nameList ...string) error {
+	err := m.Connect()
+	if err != nil {
+		return err
+	}
+	collection := m.GetCollection()
+	return collection.DropIndex(nameList...)
+}
+
 func Save(collection *mgo.Collection, model interface{}) (err error) {
 	if collection == nil {
 		return fmt.Errorf("collection is nil")
