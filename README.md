@@ -3,7 +3,7 @@
 ## Getting Start
 
 ``` Bash
-$ go get -u github.com/siskinc/mgorm
+$ go get -u github.com/mongodb/mongo-go-driver
 ```
 
 ## Example
